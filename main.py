@@ -1,4 +1,3 @@
-```python
 import requests
 import time
 import os
@@ -70,4 +69,4 @@ while True:
     except Exception as e:
         print("Ошибка:", e)
         time.sleep(60)
-```
+
