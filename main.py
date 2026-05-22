@@ -22,19 +22,19 @@ def home():
     return "OK", 200
 
 
-@app.route("/webhook", methods=["POST", "GET"])
-@app.route("/webhook/notification", methods=["POST", "GET"])
+@app.route("/webhook", methods=["POST"])
+@app.route("/webhook/notification", methods=["POST"])
 def webhook():
-
-    if request.method == "GET":
-        return "OK", 200
 
     data = request.json
 
     print("Webhook:", data)
 
-    if not data:
-        return jsonify({"ok": True}), 200
+    # Ответ на PING от Маркета
+    if data.get("notificationType") == "PING":
+        return jsonify({
+            "status": "OK"
+        }), 200
 
     order_id = (
         data.get("orderId")
@@ -43,10 +43,13 @@ def webhook():
     )
 
     if not order_id:
-        return jsonify({"ok": True}), 200
+        return jsonify({
+            "status": "OK"
+        }), 200
 
     try:
 
+        # Получаем заказ
         order_response = requests.get(
             f"https://api.partner.market.yandex.ru/v2/campaigns/{CAMPAIGN_ID}/orders/{order_id}",
             headers={
@@ -60,11 +63,15 @@ def webhook():
 
         order = order_data.get("order", {})
 
+        # Проверяем статус
         if order.get("status") != "PROCESSING":
-            return jsonify({"ok": True}), 200
+            return jsonify({
+                "status": "OK"
+            }), 200
 
         item_id = order["items"][0]["id"]
 
+        # Отправляем цифровой товар
         body = {
             "items": [
                 {
@@ -91,7 +98,9 @@ def webhook():
     except Exception as e:
         print("ERROR:", e)
 
-    return jsonify({"ok": True}), 200
+    return jsonify({
+        "status": "OK"
+    }), 200
 
 
 if __name__ == "__main__":
