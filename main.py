@@ -17,6 +17,13 @@ ONEUNIT20
 """
 
 
+def ok_response():
+    return jsonify({
+        "name": "digital",
+        "status": "OK"
+    }), 200
+
+
 @app.route("/", methods=["GET"])
 def home():
     return "OK", 200
@@ -30,11 +37,11 @@ def webhook():
 
     print("Webhook:", data)
 
-    # Ответ на PING от Маркета
+    if not data:
+        return ok_response()
+
     if data.get("notificationType") == "PING":
-        return jsonify({
-            "status": "OK"
-        }), 200
+        return ok_response()
 
     order_id = (
         data.get("orderId")
@@ -43,13 +50,9 @@ def webhook():
     )
 
     if not order_id:
-        return jsonify({
-            "status": "OK"
-        }), 200
+        return ok_response()
 
     try:
-
-        # Получаем заказ
         order_response = requests.get(
             f"https://api.partner.market.yandex.ru/v2/campaigns/{CAMPAIGN_ID}/orders/{order_id}",
             headers={
@@ -58,20 +61,15 @@ def webhook():
         )
 
         order_data = order_response.json()
-
         print("Order:", order_data)
 
         order = order_data.get("order", {})
 
-        # Проверяем статус
         if order.get("status") != "PROCESSING":
-            return jsonify({
-                "status": "OK"
-            }), 200
+            return ok_response()
 
         item_id = order["items"][0]["id"]
 
-        # Отправляем цифровой товар
         body = {
             "items": [
                 {
@@ -98,9 +96,7 @@ def webhook():
     except Exception as e:
         print("ERROR:", e)
 
-    return jsonify({
-        "status": "OK"
-    }), 200
+    return ok_response()
 
 
 if __name__ == "__main__":
