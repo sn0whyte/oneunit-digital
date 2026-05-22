@@ -16,7 +16,7 @@ while True:
         print("Проверка заказов...")
 
         response = requests.get(
-            f"https://api.partner.market.yandex.ru/campaigns/{CAMPAIGN_ID}/orders?status=PROCESSING",
+            f"https://api.partner.market.yandex.ru/v2/campaigns/{CAMPAIGN_ID}/orders?status=PROCESSING",
             headers=headers
         )
 
