@@ -21,6 +21,7 @@ while True:
         )
 
         data = response.json()
+        print(data)
 
         orders = data.get("orders", [])
 
