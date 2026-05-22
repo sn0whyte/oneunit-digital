@@ -1,7 +1,9 @@
+```python
 import requests
 import time
+import os
 
-API_KEY = "ACMA:EmkHOmUUfComIFAnHkVQrfEhRWuZxDoGHrRqU0hG:52df12e8"
+API_KEY = os.getenv("API_KEY")
 CAMPAIGN_ID = "149132406"
 
 headers = {
@@ -12,15 +14,19 @@ processed_orders = set()
 
 while True:
     try:
-        # Получаем заказы
+        print("Проверка заказов...")
+
         response = requests.get(
             f"https://api.partner.market.yandex.ru/campaigns/{CAMPAIGN_ID}/orders",
             headers=headers
         )
 
-        orders = response.json().get("orders", [])
+        data = response.json()
+
+        orders = data.get("orders", [])
 
         for order in orders:
+
             order_id = order["id"]
 
             if order_id in processed_orders:
@@ -28,15 +34,19 @@ while True:
 
             if order["status"] == "PROCESSING":
 
+                print(f"Найден новый заказ: {order_id}")
+
                 item_id = order["items"][0]["id"]
 
                 body = {
                     "items": [
                         {
                             "id": item_id,
-                            "codes": ["ONEUNIT20"],
-                            "activate_till": "2026-12-31",
-                            "slip": "Спасибо за покупку сертификата OneUnit!\n\nВаш промокод: ONEUNIT20\n\nПромокод активируется через 24 часа."
+                            "codes": [
+                                "ONEUNIT20"
+                            ],
+                            "activateTill": "2026-12-31",
+                            "slip": "Здравствуйте!\n\nСпасибо за покупку цифрового сертификата OneUnit.\n\nПеред использованием промокода убедитесь, что вы подписаны на магазин OneUnit.\n\nВаш промокод:\nONEUNIT20\n\nКак воспользоваться скидкой:\n1. Перейдите в магазин OneUnit\n2. Выберите нужный товар\n3. Добавьте товар в корзину\n4. При оформлении заказа примените промокод ONEUNIT20\n\nВажно:\n— Промокод активируется через 24 часа после покупки сертификата\n— Скидка действует только на ассортимент магазина OneUnit\n— Скидка не суммируется с другими акциями\n\nПриятных покупок!"
                         }
                     ]
                 }
@@ -50,13 +60,14 @@ while True:
                     json=body
                 )
 
-                print(f"Заказ {order_id} обработан:", send.status_code)
+                print(f"Ответ API: {send.status_code}")
+                print(send.text)
 
                 processed_orders.add(order_id)
 
         time.sleep(60)
 
     except Exception as e:
-        print(e)
+        print("Ошибка:", e)
         time.sleep(60)
-
+```
