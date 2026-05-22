@@ -16,8 +16,14 @@ while True:
         print("Проверка заказов...")
 
         response = requests.get(
-            f"https://api.partner.market.yandex.ru/v2/campaigns/{CAMPAIGN_ID}/orders",
-            headers=headers
+    f"https://api.partner.market.yandex.ru/v2/campaigns/{CAMPAIGN_ID}/orders",
+    headers=headers,
+    params={
+        "fromDate": "22-05-2026",
+        "toDate": "23-05-2026",
+        "statuses": "PROCESSING"
+    }
+
         )
 
         data = response.json()
