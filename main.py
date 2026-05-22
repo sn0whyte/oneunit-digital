@@ -1,5 +1,6 @@
 import os
 import requests
+from datetime import datetime, timezone
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
@@ -21,6 +22,7 @@ def ok_response():
     return jsonify({
         "name": "digital",
         "version": "1.0",
+        "time": datetime.now(timezone.utc).isoformat(),
         "status": "OK"
     }), 200
 
@@ -77,7 +79,7 @@ def webhook():
 
         item_id = order["items"][0]["id"]
 
-        # Отправка цифрового товара
+        # Отправляем цифровой товар
         body = {
             "items": [
                 {
