@@ -1,3 +1,26 @@
+import os
+import requests
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+API_KEY = os.getenv("API_KEY")
+CAMPAIGN_ID = "149132406"
+
+SLIP_TEXT = """Здравствуйте!
+
+Спасибо за покупку цифрового сертификата OneUnit.
+
+Ваш промокод:
+ONEUNIT20
+"""
+
+
+@app.route("/", methods=["GET"])
+def home():
+    return "OK", 200
+
+
 @app.route("/webhook", methods=["POST", "GET"])
 def webhook():
 
@@ -18,7 +41,7 @@ def webhook():
     )
 
     if not order_id:
-        return jsonify({"ok": True, "message": "PING"}), 200
+        return jsonify({"ok": True}), 200
 
     order_response = requests.get(
         f"https://api.partner.market.yandex.ru/v2/campaigns/{CAMPAIGN_ID}/orders/{order_id}",
@@ -59,3 +82,8 @@ def webhook():
     print("Deliver response:", send.status_code, send.text)
 
     return jsonify({"ok": True}), 200
+
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
