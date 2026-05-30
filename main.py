@@ -19,7 +19,6 @@ def ok_response():
 
 
 def get_promo_by_sku(shop_sku):
-
     if shop_sku == "Подарочный сертификат 18%":
         return "ONEUNIT18", "18%"
 
@@ -27,6 +26,32 @@ def get_promo_by_sku(shop_sku):
         return "ONEUNIT10", "10%"
 
     return "ONEUNIT18", "18%"
+
+
+def build_slip_text(promo_code, discount):
+    return f"""
+Ваш промокод: {promo_code}
+
+Размер скидки: {discount}
+
+Срок действия:
+6 месяцев.
+
+Промокод активируется через 24 часа после получения.
+
+Инструкция:
+1. Выберите товар в магазине OneUnit.
+2. Добавьте товар в корзину.
+3. При оформлении заказа введите промокод {promo_code}.
+
+Важно:
+• Перед применением подпишитесь на магазин OneUnit.
+• Скидка не суммируется с другими акциями.
+• Один промокод можно использовать один раз.
+
+Спасибо за покупку!
+OneUnit
+"""
 
 
 @app.route("/", methods=["GET"])
@@ -37,9 +62,7 @@ def home():
 @app.route("/webhook", methods=["POST"])
 @app.route("/webhook/notification", methods=["POST"])
 def webhook():
-
     data = request.json
-
     print("Webhook:", data)
 
     if not data:
@@ -58,12 +81,9 @@ def webhook():
         return ok_response()
 
     try:
-
         order_response = requests.get(
             f"https://api.partner.market.yandex.ru/v2/campaigns/{CAMPAIGN_ID}/orders/{order_id}",
-            headers={
-                "Api-Key": API_KEY
-            }
+            headers={"Api-Key": API_KEY}
         )
 
         order_data = order_response.json()
@@ -75,44 +95,11 @@ def webhook():
             return ok_response()
 
         item = order["items"][0]
-
         item_id = item["id"]
         shop_sku = item.get("shopSku", "")
 
-        print("SHOP SKU:", shop_sku)
-
         promo_code, discount = get_promo_by_sku(shop_sku)
-
-        slip_text = f"""
-Спасибо за покупку сертификата OneUnit!
-
-━━━━━━━━━━━━━━━━━━
-Ваш промокод:
-{promo_code}
-━━━━━━━━━━━━━━━━━━
-
-Размер скидки:
-{discount}
-
-Промокод активируется через 24 часа.
-
-Срок действия:
-6 месяцев с момента получения.
-
-Как использовать:
-1. Перейдите в магазин OneUnit
-2. Выберите нужный товар
-3. Добавьте товар в корзину
-4. При оформлении заказа примените промокод {promo_code}
-
-Важно:
-• Перед применением убедитесь, что вы подписаны на магазин OneUnit
-• Скидка не суммируется с другими акциями
-• Один промокод можно использовать один раз
-
-Спасибо за покупку!
-OneUnit
-"""
+        slip_text = build_slip_text(promo_code, discount)
 
         body = {
             "items": [
@@ -134,6 +121,7 @@ OneUnit
             json=body
         )
 
+        print("SHOP SKU:", shop_sku)
         print("Promo:", promo_code)
         print("Deliver response:", send.status_code)
         print(send.text)
