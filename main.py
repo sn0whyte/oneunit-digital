@@ -8,34 +8,6 @@ app = Flask(__name__)
 API_KEY = os.getenv("API_KEY")
 CAMPAIGN_ID = "149132406"
 
-SLIP_TEXT = """
-Спасибо за покупку сертификата OneUnit!
-
-━━━━━━━━━━━━━━━━━━
-🎁 Ваш промокод:
-ONEUNIT20
-━━━━━━━━━━━━━━━━━━
-
-📌 Инструкция:
-1. Перейдите в магазин OneUnit
-2. Добавьте нужные товары в корзину
-3. Введите промокод при оформлении заказа
-4. Скидка применится автоматически
-
-⏳ Промокод активируется в течение 24 часов.
-
-📅 Срок действия:
-6 месяцев с момента получения.
-
-⚠️ Важно:
-• Скидка действует на весь ассортимент
-• Один промокод можно использовать один раз
-• Не передавайте код третьим лицам
-
-Спасибо за покупку ❤️
-OneUnit
-"""
-
 
 def ok_response():
     return jsonify({
@@ -44,6 +16,17 @@ def ok_response():
         "time": datetime.now(timezone.utc).isoformat(),
         "status": "OK"
     }), 200
+
+
+def get_promo_by_sku(shop_sku):
+
+    if shop_sku == "Подарочный сертификат 18%":
+        return "ONEUNIT18", "18%"
+
+    if shop_sku == "Подарочный сертификат 10%":
+        return "ONEUNIT10", "10%"
+
+    return "ONEUNIT18", "18%"
 
 
 @app.route("/", methods=["GET"])
@@ -59,14 +42,12 @@ def webhook():
 
     print("Webhook:", data)
 
-    # Ответ на PING
     if not data:
         return ok_response()
 
     if data.get("notificationType") == "PING":
         return ok_response()
 
-    # Получаем ID заказа
     order_id = (
         data.get("orderId")
         or data.get("order", {}).get("id")
@@ -78,7 +59,6 @@ def webhook():
 
     try:
 
-        # Получаем заказ
         order_response = requests.get(
             f"https://api.partner.market.yandex.ru/v2/campaigns/{CAMPAIGN_ID}/orders/{order_id}",
             headers={
@@ -87,25 +67,60 @@ def webhook():
         )
 
         order_data = order_response.json()
-
         print("Order:", order_data)
 
         order = order_data.get("order", {})
 
-        # Проверяем статус
         if order.get("status") != "PROCESSING":
             return ok_response()
 
-        item_id = order["items"][0]["id"]
+        item = order["items"][0]
 
-        # Отправляем цифровой товар
+        item_id = item["id"]
+        shop_sku = item.get("shopSku", "")
+
+        print("SHOP SKU:", shop_sku)
+
+        promo_code, discount = get_promo_by_sku(shop_sku)
+
+        slip_text = f"""
+Спасибо за покупку сертификата OneUnit!
+
+━━━━━━━━━━━━━━━━━━
+Ваш промокод:
+{promo_code}
+━━━━━━━━━━━━━━━━━━
+
+Размер скидки:
+{discount}
+
+Промокод активируется через 24 часа.
+
+Срок действия:
+6 месяцев с момента получения.
+
+Как использовать:
+1. Перейдите в магазин OneUnit
+2. Выберите нужный товар
+3. Добавьте товар в корзину
+4. При оформлении заказа примените промокод {promo_code}
+
+Важно:
+• Перед применением убедитесь, что вы подписаны на магазин OneUnit
+• Скидка не суммируется с другими акциями
+• Один промокод можно использовать один раз
+
+Спасибо за покупку!
+OneUnit
+"""
+
         body = {
             "items": [
                 {
                     "id": item_id,
-                    "codes": ["ONEUNIT20"],
+                    "codes": [promo_code],
                     "activate_till": "2026-12-31",
-                    "slip": SLIP_TEXT
+                    "slip": slip_text
                 }
             ]
         }
@@ -119,6 +134,7 @@ def webhook():
             json=body
         )
 
+        print("Promo:", promo_code)
         print("Deliver response:", send.status_code)
         print(send.text)
 
